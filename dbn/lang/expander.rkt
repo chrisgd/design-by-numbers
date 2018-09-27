@@ -295,7 +295,7 @@
                            (set! var (+ var 1))
                            ; to refresh or not to refresh, that is the question,
                            ; as too much refreshing may cause flickering!
-                           (dbn-refresh)
+                           #;(dbn-refresh)
                            ; recursively call the loop!
                            (loop)]))])
          ; start things off

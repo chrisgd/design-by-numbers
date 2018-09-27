@@ -1,4 +1,4 @@
-dbn : the Design By Numbers language for Racket
+dbn : the Design By Numbers language
 Copyright (c) 2018 Jeff Edgington and Chris GauthierDickey 
 
 This package is distributed under the GNU Lesser General Public

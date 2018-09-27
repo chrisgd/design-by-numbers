@@ -19,7 +19,7 @@
                                  COMMENT))
 
 ; this is for the end of file marker
-(define-empty-tokens end-of-file (EOF NEWLINE))
+(define-empty-tokens end-of-file (EOF NEWLINE ERROR))
 
 
 ; these are all the keywords
@@ -82,15 +82,16 @@
    [#\>                                             (token-GREATERTHAN)]
    ; compress a sequence of newlines into one
    [(:+ #\newline)                                  (token-NEWLINE)]
-   [(:or "PAPER" "Paper")                           (token-PAPER)]
-   [(:or "PEN" "Pen")                               (token-PEN)]
-   [(:or "LINE" "Line")                             (token-LINE)]
-   [(:or "SET" "Set")                               (token-SET)]
-   [(:or "REPEAT" "Repeat")                         (token-REPEAT)]
-   [(:or "FOREVER" "Forever")                       (token-FOREVER)]
-   [(:or "SAME?" "Same?")                           (token-SAME)]
-   [(:or "NOTSAME?" "Notsame?" "NotSame?")          (token-NOTSAME)]
-   [(:or "SMALLER?" "Smaller?")                     (token-SMALLER)]
+   [(:or "PAPER" "Paper")                   (token-PAPER)]
+   [(:or "PEN" "Pen")                         (token-PEN)]
+   [(:or "LINE" "Line")                      (token-LINE)]
+   [(:or "SET" "Set")                         (token-SET)]
+   [(:or "REPEAT" "Repeat")                (token-REPEAT)]
+   [(:or "FOREVER" "Forever")             (token-FOREVER)]
+   ["SAME?"                   (token-SAME)]
+   [(:or "NOTSAME?" "Notsame?" "NotSame?"
+        )                                (token-NOTSAME)]
+   [(:or "SMALLER?" "Smaller?")          (token-SMALLER)]
    [(:or "NOTSMALLER?" "Notsmaller?" "NotSmaller?") (token-NOTSMALLER)]
    [(:or "MOUSE" "Mouse")                           (token-MOUSE)]
    [(:or "LOAD" "Load")                             (token-LOAD)]
@@ -122,7 +123,7 @@
 
    ; handles comments, note that it consumes the newline after the comment
    [(:: "//" (:* (char-complement (:or #\newline #\linefeed)))
-        (:+ (:or #\newline #\linefeed))) (return-without-pos (dbnlexer input-port))]
+        #;(:+ (:or #\newline #\linefeed))) (return-without-pos (dbnlexer input-port))]
 
    
    ; handle a lang line so we ignore it
@@ -164,15 +165,46 @@
 ; input port -> thunk
 ; creates a thunk that when called will return the next token from the input stream
 (define (get-tokenizer in)
-  (λ () (dbnlexer in)))
+  (port-count-lines! in)
+  (define upper-in (make-uppercase-input-port in))
+  (port-count-lines! upper-in)
+  (λ () (dbnlexer upper-in)))
 
+(define (make-uppercase-input-port in)
+  (filter-read-input-port in (λ (bytes count)
+                               (cond
+                                 ; if it's some number of bytes, then
+                                 ; modify the bytestring and deal return the count
+                                 [(exact-nonnegative-integer? count)
+                                  (let* ([up-str (string-upcase
+                                                  (bytes->string/utf-8 bytes))]
+                                         [conv-bytes (string->bytes/utf-8 up-str)])
+                                    (bytes-copy! bytes 0 conv-bytes))
+                                  count]
+                                 ; otherwise just return the 2nd argument 
+                                 [else count]))
+                          (λ (bytes pos evt rest)
+                            (cond
+                              [(exact-nonnegative-integer? rest)
+                               (let* ([up-str (string-upcase
+                                               (bytes->string/utf-8 bytes))]
+                                      [conv-bytes (string->bytes/utf-8 up-str)])
+                                 (bytes-copy! bytes 0 conv-bytes)
+                                 (bytes-length conv-bytes))]
+                              [(procedure? rest)
+                               (printf "proc name: ~a~n" rest)
+                               rest]
+                              [else rest]))
+                          #t))
 
 ; input port -> list of tokens
 ; this function takes an input port and returns a list of
 ; tokens read from it (until it reaches the end of file (eof))
 (define (lex in)
   (port-count-lines! in)
-  (let ([tokenize (get-tokenizer in)])
+  (define filtering-in (make-uppercase-input-port in))
+  (port-count-lines! filtering-in)
+  (let ([tokenize (get-tokenizer filtering-in)])
     (define (lexfun)
       (let ([tok (tokenize)])
         (cond

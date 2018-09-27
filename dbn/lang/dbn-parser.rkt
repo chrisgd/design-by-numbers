@@ -74,7 +74,8 @@
    (grammar
     (prog
      ; this is needed to handle empty programs
-     [() (program null)]     
+     ;[() (program null)]
+     [(maybe-newlines) (program null)]     
      ; otherwise, a program is just a list of statements
      [(maybe-newlines statements) (program (flatten (filter (λ (el) (not (null? el))) $2)))])
 
@@ -96,7 +97,7 @@
     (statement
      ; a statement is one of these many things
      [(PAPER expr) (paper-expr $2 (numeric-expr DEFAULT-PAPER-SIZE) (numeric-expr DEFAULT-PAPER-SIZE))]
-     ;[(PAPER expr expr expr) (paper-expr $2 $3 $4)]
+     [(PAPER expr expr expr) (paper-expr $2 $3 $4)]
      [(PEN expr ) (pen-expr $2)]
      [(PRINT expr ) (print-expr $2)]
      [(SET IDENTIFIER expr) (assignment-expr $2 $3)]
@@ -179,6 +180,10 @@
      [(expr SUBTRACTION term) (sub-expr $1 $3)]
      [(term) $1])
 
+    (maybe-exprs
+     [() null]
+     [(exprs) $1])
+    
     (term
      [(term MULTIPLICATION factor) (mult-expr $1 $3)]
      [(term DIVISION factor) (div-expr $1 $3)]
@@ -195,7 +200,7 @@
      [(LESSTHAN TIME expr GREATERTHAN) (time-expr $3)]
      [(LESSTHAN MOUSE expr GREATERTHAN) (mouse-expr $3)]
      [(LESSTHAN KEY expr GREATERTHAN) (key-expr $3)]
-     [(LESSTHAN IDENTIFIER exprs GREATERTHAN) (apply-expr $2 $3)]
+     [(LESSTHAN IDENTIFIER maybe-exprs GREATERTHAN) (apply-expr $2 $3)]
      [(LESSTHAN BITMAP GREATERTHAN) (bitmap-expr)])
     
     )))
