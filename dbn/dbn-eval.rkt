@@ -11,7 +11,7 @@
 ;; this evaluates dbn from an input port, or should anyways
 (define (eval-in port)
   ; get the ast (this is from dbn-parser.rkt)
-  (let ([ast (parse port)])
+  (let ([ast (ast:transform-all (parse port))])
     (parser-error #f)
     (if (parser-error)
         (error "Error parsing dbn file")
@@ -48,3 +48,11 @@
       ; now, with each file, eval it!
       (printf "Executing ~a~n" file)
       (eval-file file)))
+
+(define (eval-dir dir)
+  (for ([file (in-directory dir)])
+    (if (string-suffix? (path->string file) ".dbn")
+        (begin
+          (printf "Evaluating ~a~n" file)
+          (eval-file file))
+        (printf "Skipping ~a~n" file))))

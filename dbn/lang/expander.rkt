@@ -204,13 +204,11 @@
             (provide name))]))
 (provide number-def)
 
-
-
 ; value-command is basically a 'return' in DBN
 ;(define-syntax value-command
 ;  (syntax-rules ()
-;    ; we expand to what would have been a return continuation,
-;    ; note that we're in trouble if we expand to this outside of a number-def
+    ; we expand to what would have been a return continuation,
+    ; note that we're in trouble if we expand to this outside of a number-def
 ;    [(value-command v) (return-k v)]))
 (provide value-command)
 
