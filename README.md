@@ -11,3 +11,11 @@ download Racket (http://racket-lang.org) and go to File | Package Manager.
 From here, you can download and install design-by-numbers (this repository)
 and you can use the language by putting #lang racket at the top of your
 file.  
+
+For example, your first program should look like the following:
+```racket
+#lang dbn
+Paper 50
+```
+
+When you hit 'Run' in Dr. Racket, you should get a window that is filled with grey.
