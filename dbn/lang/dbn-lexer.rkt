@@ -266,7 +266,7 @@
   (check-equal? (lexstr "number") (list (token-NUMBER)) "Lexing number keyword issue")
   (check-equal? (lexstr "antialias") (list (token-ANTIALIAS)) "Lexing antialias issue")
   (check-equal? (lexstr "foo") (list (token-IDENTIFIER 'FOO)) "Lexing identifier issue")
-  (check-equal? (lexstr "fo5o1") (list (token-IDENTIFIER 'FOO1)) "Lexing identifier issue")
+  (check-equal? (lexstr "fo5o1") (list (token-IDENTIFIER 'FO5O1)) "Lexing identifier issue")
   (check-equal? (lexstr "1foo") (list (token-NUMERICVALUE 1) (token-IDENTIFIER 'FOO)) "Lexing identifier issue")
   ; this is fine on Mac, but Windows is case-sensitive (also on some Macs if that's how
   ; the filesystem was defined, so this is something to remember)
