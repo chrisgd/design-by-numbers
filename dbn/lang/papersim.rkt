@@ -1,5 +1,10 @@
 #lang racket
 
+(module+ test
+  (require rackunit
+           rackunit/text-ui)
+  )
+
 (require racket/gui)
 (require racket/cmdline)
 (require racket/gui/dynamic)
@@ -14,8 +19,6 @@
 (define gui:color% (gui-dynamic-require 'color%))
 (define gui:make-color (gui-dynamic-require 'make-color))
 (define gui:make-pen (gui-dynamic-require 'make-pen))
-
-#;(require test-engine/racket-tests)
 
 ; I think this is all we need to provide?
 (provide dbncolor dbncolor-grey run-paper-sim set-pen-color! clear-paper
@@ -328,5 +331,3 @@
 (define (dbncolor->greyscale col)
   (dbncolor-grey col))
               
-
-#;(test)

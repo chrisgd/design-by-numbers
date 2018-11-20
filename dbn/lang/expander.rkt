@@ -1,4 +1,7 @@
 #lang racket
+
+(module test racket/base)
+
 (require (for-syntax syntax/parse)
          "papersim.rkt")
 
@@ -39,9 +42,12 @@
 (define-syntax program-command
   (syntax-rules ()
     ; start with running the paper sim, and end with refreshing
+    [(program-command) (void)]
     [(program-command statement ...)
      (begin
+       ; begin by running the paper sim
        (run-paper-sim)
+       ; then insert all the statements in our program
        statement ...
        (dbn-refresh)
        ; tests whether the window should automatically exit or not (by default it pauses)
@@ -131,7 +137,10 @@
 ; print-statement is the Print statement in DBN that calls display on its expression
 (define-syntax print-command
   (syntax-rules ()
-    [(print-command expr) (display expr)]))
+    [(print-command expr)
+     (let ([res expr])
+       (display res)
+       expr)]))
 (provide print-command)
 
 ; var-expr is a variable expression in DBN--ie, a "read" of the variable and expands to simply a name

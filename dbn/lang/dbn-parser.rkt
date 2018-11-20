@@ -221,7 +221,23 @@
   (let ([in (open-input-file filename)])
     (parse in)))
 
+;; tests for the grammar module
+(module+ test
+  (require rackunit)
+  (require rackunit/text-ui)
 
+  (test-equal? "Grammar test for Paper" (parse-str "Paper 100\n")
+                (program (list (paper-expr (numeric-expr 100) (numeric-expr 100) (numeric-expr 100)))))
+   (test-equal? "Grammar test for Pen" (parse-str "Pen 100\n")
+                (program (list (pen-expr (numeric-expr 100)))))
+   (test-equal? "Grammar test for Line" (parse-str "Line 0 0 100 100\n")
+                (program (list (line-expr (numeric-expr 0) (numeric-expr 0) (numeric-expr 100) (numeric-expr 100)))))
+   (test-equal? "Grammar test for Set" (parse-str "Set X (50 * 25)\n")
+                (program (list (assignment-expr 'X (mult-expr (numeric-expr 50) (numeric-expr 25))))))
+   (test-equal? "Grammar test for Repeat" (parse-str "Repeat X 0 100\n{\nPrint X\n}\n")
+                (program (list (repeat-expr 'X (numeric-expr 0) (numeric-expr 100) (list (print-expr (var-expr 'X)))))))
+   (test-equal? "Grammar test for var expression" (parse-str "Set A X\n")
+                (program (list (assignment-expr 'A (var-expr 'X))))))
 
 
 

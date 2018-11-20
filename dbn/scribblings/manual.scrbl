@@ -1,4 +1,7 @@
 #lang scribble/manual
+
+@(module test racket/base)
+
 @(require (for-label racket))
 
 @title{Design By Numbers}
@@ -231,7 +234,7 @@ and then search for design-by-numbers. When you find this,
 click 'Install' to install it. 
 
 To create a program in DBN, you must put
-@codeblock{#lang dbn} at the top of the Racket Definitions
+#lang dbn at the top of the Racket Definitions
 area. Note, this is
 only required because you need to let Racket know which kind of
 language will follow. By doing this, you tell Racket to use the
@@ -247,7 +250,7 @@ you will run (or execute) the code you've typed in the Defintions.
 
 Try this first program in DBN:
 
-@codeblock{#lang dbn
+@codeblock{
            Paper 0}
 
 You should see a small window pop up on the screen. This is the
