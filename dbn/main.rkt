@@ -1,13 +1,21 @@
 #lang racket/base
 
-(require "lang/reader.rkt")
-; this will be required
-; for doing the actual expansion "lang/expander.rkt")
+; in order for a #lang to work, you need to have a reader submodule of main.rkt
+; see https://docs.racket-lang.org/guide/language-collection.html for details, thus
+; as long as we require the right reader module here, we will be good because it
+; will export the read and read-syntax functions properly. Doing this prevents "conflicts"
+; on the package manager because you can name your reader whatever you'd like
+; (otherwise it seems to want to find <pkg>/lang/reader.rkt, which conflicts with
+; every other #lang package created like this
+(module reader racket/base
+  (require "lang/dbn-reader.rkt")
+  (provide read-syntax))
 
-(provide (all-from-out "lang/reader.rkt")
-         #;(all-from-out "lang/expander.rkt")) ; this will be needed too!
+; now we have to provide read-syntax from main so the reader works properly
+(require 'reader)
+(provide read-syntax)
 
 (module+ main
-  ;; Main entry point, executed when run with the `racket` executable or DrRacket.
-  
+  ;; Main entry point, executed when run with the `racket` executable or DrRacket.  
   )
+

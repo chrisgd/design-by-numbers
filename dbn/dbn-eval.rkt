@@ -4,7 +4,7 @@
          "lang/dbn-errors.rkt"
          "lang/papersim.rkt"
          (prefix-in ast: "lang/dbn-ast.rkt")
-         "lang/expander.rkt"
+         "lang/dbn-expander.rkt"
          racket/string
          racket/cmdline)
 
@@ -21,7 +21,7 @@
         (let ([sexp (ast:ast->sexp ast)])
           ;(parameterize ([current-namespace (make-base-namespace)])
             ; then turn it into a syntax object, macro expand it, and eval it
-            #;(require "lang/expander.rkt")
+            #;(require "lang/dbn-expander.rkt")
             (eval (expand (datum->syntax #f sexp)))))))
 
 ;;; evaluates a file by opening it and calling eval-in on the port
