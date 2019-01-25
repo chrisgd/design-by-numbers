@@ -19,3 +19,8 @@ Paper 50
 ```
 
 When you hit 'Run' in Dr. Racket, you should get a window that is filled with grey.
+
+Details on the language itself can be found in the documentation. From Dr. Racket,
+go to the Help menu item, open the Racket documentation and search for Design
+By Numbers (which should be under Languages). This documentation explains how to
+use the language, what the commands are, and so forth.
