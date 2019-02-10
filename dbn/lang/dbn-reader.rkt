@@ -6,8 +6,8 @@
 
 (define (read-syntax path port)
   ; create the parse tree
-  (let* ([parse-tree (transform-all (parse port))]
-         ; then build the s-expression
+  (let* ([parse-tree (parse port)]
+         ; then build the s-expression (note, ast->sexp does all the transforms)
          [s-exp (ast->sexp parse-tree)]
          ; create a module from this, note that this 
          [module-datum `(module dbn-mod dbn/lang/dbn-expander ,s-exp)])

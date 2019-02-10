@@ -276,19 +276,6 @@
      (set-antialias v)]))
 (provide antialias-command)
 
-#|
-(let* ([start (eval-expr env from)] ; evaluate the start value
-       [end (eval-expr env to)]     ; then the ending value
-       [newenv (extend-env env sym start)]
-       [ref (apply-env newenv sym)])
-   (letrec ([loop (λ () (cond [(<= (deref ref) end)                                   
-                             (eval-statements newenv body slow?)
-                                   (setref! ref (add1 (deref ref)))
-                                   ;(printf "repeat from ~a to ~a~n" (deref ref) end)
-                                   (dbn-refresh)
-                                   (loop)]))])
-         (loop)
-|#
 
 ; macro for the repeat command, corresponding to DBN Repeat, which uses a loop in Racket
 (define-syntax repeat-command

@@ -27,7 +27,7 @@
     [else
      ; get the line, then parse it, and turn it into an sexp
      (let* ([line (read-line port 'any)]
-            [sexp (ast->sexp (transform-all (parse-str line)))])
+            [sexp (ast->sexp (parse-str line))])
        ; otherwise parse using our parse function
        #;(strip-context (datum->syntax #f sexp))
        (datum->syntax #f sexp))]))
