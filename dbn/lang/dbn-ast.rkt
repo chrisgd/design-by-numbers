@@ -369,18 +369,6 @@
     [_ (values env statement)]))
              
 
-; compose list takes a function list, applies the first function to arg, then the second function
-; to the result of arg, and so forth, until we're done with functions
-(define (compose-list fun-list arg)
-  ; base case, just return the final arg
-  (if (null? fun-list)
-      arg
-      ; recursive case, compose list with the rest of the functions on the result
-      ; of the first function applied to the argument
-      (compose-list (rest fun-list) ((first fun-list) arg))))
-
-
-
 ; perform all of the transformations on a given program by applying the functions in fun-list
 ; to them. fun-list should be a list of functions that take a statement and environment
 ; to process each statement accordingly. This function then calls transform-program on each
@@ -391,8 +379,10 @@
          ; and calls transform-program using that function and passing the program to it
          (map (λ (fun)
                 (λ (p) (transform-program fun p))) fun-list)])
-    ; now compose all of those transformations till we end up with the final program
-    (compose-list transformations prog)))
+    ; now compose all of those transformations till we end up with the final program,
+    ; this is done with foldl, which applies each argument of the function list (transformations)
+    ; to prog, which results in a new prog, which is the result used for the next pass
+    (foldl (λ (fun prog) (fun prog)) prog transformations)))
 
 
 ; just a short-cut to do all the transformations
