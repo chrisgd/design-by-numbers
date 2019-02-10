@@ -1,4 +1,8 @@
-#lang racket
+#lang racket/base
+
+; reducing the requirements for the file
+(require racket/match
+         racket/list)
 
 (require "dbn-env.rkt")
 ;; this module contains all the structs needed to create the abstract
@@ -71,106 +75,109 @@
 
 ; turn an ast into an s-expression for the reader
 (define (ast->sexp ast)
-  (match ast
-    ; just map the statements into sexpressions
-    [(program statements) (cons 'program-command (map ast->sexp statements))]
-    ; numbers are numbers (data)
-    [(numeric-expr num) num]
-    ; symbols are symbols, racket will handle these later
-    [(var-expr sym) sym]
-
-    ; turn commands into, well commands that we'll handle with
-    ; macros by expanding them into actual racket code
-    [(paper-expr val xsize ysize) (list 'paper-command
-                                        (ast->sexp val)
-                                        (ast->sexp xsize)
-                                        (ast->sexp ysize))]
-    [(pen-expr val) (list 'pen-command (ast->sexp val))]
-    [(line-expr x1 y1 x2 y2) (list 'line-command
-                                   (ast->sexp x1)
-                                   (ast->sexp y1)
-                                   (ast->sexp x2)
-                                   (ast->sexp y2))]
-    
-    ; math expressions
-    [(add-expr x y)  (list 'add-expr (ast->sexp x) (ast->sexp y))]
-    [(sub-expr x y)  (list 'sub-expr (ast->sexp x) (ast->sexp y))]
-    [(mult-expr x y) (list 'mult-expr (ast->sexp x) (ast->sexp y))]
-    [(div-expr x y)  (list 'div-expr (ast->sexp x) (ast->sexp y))]
-    
-    ; we can test stuff using print!
-    [(print-expr e)  (list 'print-command (ast->sexp e))]
-
-    ; var expressions become simple lists of the var-expr and its name
-    [(var-expr name) (list 'var-expr name)]
-
-    ; sets a point on the screen 
-    [(set-paper-loc x y col) (list 'set-pixel-command
-                                   (ast->sexp x)
-                                   (ast->sexp y)
-                                   (ast->sexp col))]
-
-    ; gets a point on the screen
-    [(get-paper-loc x y) `(get-pixel-expr ,(ast->sexp x) ,(ast->sexp y))]
-    
-    ; sets a var to a new value
-    [(assignment-expr sym expr) (list 'assignment-command sym (ast->sexp expr))]
-    ; creates and sets the variable to a value
-    [(create-var-expr sym expr) (list 'create-var-command sym (ast->sexp expr))]
-
-    ; an apply expression, which just creates a list of the apply-expr, the function name,
-    ; a mapping of parameters (using ast-sexp) so that the parameters will be translated also
-    [(apply-expr fun-name params) (cons 'apply-expr (cons fun-name (map ast->sexp params)))]
-
-    ; a command expression (doesn't return anything), which smashes all of these together
-    ; into a single list, but it will have a couple of sublists: the params and the body
-    [(command-fun name params body) (list 'command-def name params (map ast->sexp body))]
-
-    ; a number expression (which returns values, aka numbers), and puts all these together
-    ; into a single list (though it will consist of a param and body sublist)
-    [(number-fun name params body) (list 'number-def name params (map ast->sexp body))]
-    [(value-expr val) (list 'value-command (ast->sexp val))]
-
-    ; a load expression which just returns a load-command to be expanded later
-    [(load-expr filename) (list 'load-command filename)]
-
-    ; comparison statements, same expression becomes a list of the symbol,
-    ; its arguments and a list of the statements composing it
-    [(same-expr e1 e2 body) (list 'same-command (ast->sexp e1) (ast->sexp e2)
-                                  (map ast->sexp body))]
-    ; not same expression becomes a list of the symbol,
-    ; its arguments and a list of the statements composing it
-    [(not-same-expr e1 e2 body) (list 'not-same-command (ast->sexp e1) (ast->sexp e2)
-                                      (map ast->sexp body))]
-    ; smaller expression becomes a list of the symbol,
-    ; its arguments and a list of the statements composing it
-    [(smaller-expr e1 e2 body) (list 'smaller-command (ast->sexp e1) (ast->sexp e2)
-                                     (map ast->sexp body))]
-    ; not smaller expression becomes a list of the symbol,
-    ; its arguments and a list of the statements composing it
-    [(not-smaller-expr e1 e2 body) (list 'not-smaller-command (ast->sexp e1) (ast->sexp e2)
-                                         (map ast->sexp body))]
-
-
-    ; turn the repeat struct into an sexp
-    [(repeat-expr var start end body) (list 'repeat-command var
-                                            (ast->sexp start) (ast->sexp end)
-                                            (map ast->sexp body))]
-
-    ; turn the forever struct into a forever sexp to be macro expanded
-    [(forever-expr body) (list 'forever-command (map ast->sexp body))]
-
-    ; mouse, key and time expressions are simple to convert into s-expressions
-    [(mouse-expr val) (list 'mouse-expr (ast->sexp val))]
-    [(key-expr val) (list 'key-expr (ast->sexp val))]
-    [(time-expr val) (list 'time-expr (ast->sexp val))]
-
-    ; handle antialias
-    [(antialias-expr val) (list 'antialias-command (ast->sexp val))]
-    
-    ; throw an error so we know we have to fix it
-    [_ (error "This expression kind isn't implemented yet in ast->sexp" ast)]
-    ))
+  (define (ast->sexp-helper ast)
+    ; transform everything first
+    (match ast
+      ; just map the statements into sexpressions
+      [(program statements) (cons 'program-command (map ast->sexp-helper statements))]
+      ; numbers are numbers (data)
+      [(numeric-expr num) num]
+      ; symbols are symbols, racket will handle these later
+      [(var-expr sym) sym]
+      
+      ; turn commands into, well commands that we'll handle with
+      ; macros by expanding them into actual racket code
+      [(paper-expr val xsize ysize) (list 'paper-command
+                                          (ast->sexp-helper val)
+                                          (ast->sexp-helper xsize)
+                                          (ast->sexp-helper ysize))]
+      [(pen-expr val) (list 'pen-command (ast->sexp-helper val))]
+      [(line-expr x1 y1 x2 y2) (list 'line-command
+                                     (ast->sexp-helper x1)
+                                     (ast->sexp-helper y1)
+                                     (ast->sexp-helper x2)
+                                     (ast->sexp-helper y2))]
+      
+      ; math expressions
+      [(add-expr x y)  (list 'add-expr (ast->sexp-helper x) (ast->sexp-helper y))]
+      [(sub-expr x y)  (list 'sub-expr (ast->sexp-helper x) (ast->sexp-helper y))]
+      [(mult-expr x y) (list 'mult-expr (ast->sexp-helper x) (ast->sexp-helper y))]
+      [(div-expr x y)  (list 'div-expr (ast->sexp-helper x) (ast->sexp-helper y))]
+      
+      ; we can test stuff using print!
+      [(print-expr e)  (list 'print-command (ast->sexp-helper e))]
+      
+      ; var expressions become simple lists of the var-expr and its name
+      [(var-expr name) (list 'var-expr name)]
+      
+      ; sets a point on the screen 
+      [(set-paper-loc x y col) (list 'set-pixel-command
+                                     (ast->sexp-helper x)
+                                     (ast->sexp-helper y)
+                                     (ast->sexp-helper col))]
+      
+      ; gets a point on the screen
+      [(get-paper-loc x y) `(get-pixel-expr ,(ast->sexp-helper x) ,(ast->sexp-helper y))]
+      
+      ; sets a var to a new value
+      [(assignment-expr sym expr) (list 'assignment-command sym (ast->sexp-helper expr))]
+      ; creates and sets the variable to a value
+      [(create-var-expr sym expr) (list 'create-var-command sym (ast->sexp-helper expr))]
+      
+      ; an apply expression, which just creates a list of the apply-expr, the function name,
+      ; a mapping of parameters (using ast-sexp) so that the parameters will be translated also
+      [(apply-expr fun-name params) (cons 'apply-expr (cons fun-name (map ast->sexp-helper params)))]
+      
+      ; a command expression (doesn't return anything), which smashes all of these together
+      ; into a single list, but it will have a couple of sublists: the params and the body
+      [(command-fun name params body) (list 'command-def name params (map ast->sexp-helper body))]
+      
+      ; a number expression (which returns values, aka numbers), and puts all these together
+      ; into a single list (though it will consist of a param and body sublist)
+      [(number-fun name params body) (list 'number-def name params (map ast->sexp-helper body))]
+      [(value-expr val) (list 'value-command (ast->sexp-helper val))]
+      
+      ; a load expression which just returns a load-command to be expanded later
+      [(load-expr filename) (list 'load-command filename)]
+      
+      ; comparison statements, same expression becomes a list of the symbol,
+      ; its arguments and a list of the statements composing it
+      [(same-expr e1 e2 body) (list 'same-command (ast->sexp-helper e1) (ast->sexp-helper e2)
+                                    (map ast->sexp-helper body))]
+      ; not same expression becomes a list of the symbol,
+      ; its arguments and a list of the statements composing it
+      [(not-same-expr e1 e2 body) (list 'not-same-command (ast->sexp-helper e1) (ast->sexp-helper e2)
+                                        (map ast->sexp-helper body))]
+      ; smaller expression becomes a list of the symbol,
+      ; its arguments and a list of the statements composing it
+      [(smaller-expr e1 e2 body) (list 'smaller-command (ast->sexp-helper e1) (ast->sexp-helper e2)
+                                       (map ast->sexp-helper body))]
+      ; not smaller expression becomes a list of the symbol,
+      ; its arguments and a list of the statements composing it
+      [(not-smaller-expr e1 e2 body) (list 'not-smaller-command (ast->sexp-helper e1) (ast->sexp-helper e2)
+                                           (map ast->sexp-helper body))]
+      
+      
+      ; turn the repeat struct into an sexp
+      [(repeat-expr var start end body) (list 'repeat-command var
+                                              (ast->sexp-helper start) (ast->sexp-helper end)
+                                              (map ast->sexp-helper body))]
+      
+      ; turn the forever struct into a forever sexp to be macro expanded
+      [(forever-expr body) (list 'forever-command (map ast->sexp-helper body))]
+      
+      ; mouse, key and time expressions are simple to convert into s-expressions
+      [(mouse-expr val) (list 'mouse-expr (ast->sexp-helper val))]
+      [(key-expr val) (list 'key-expr (ast->sexp-helper val))]
+      [(time-expr val) (list 'time-expr (ast->sexp-helper val))]
+      
+      ; handle antialias
+      [(antialias-expr val) (list 'antialias-command (ast->sexp-helper val))]
+      
+      ; throw an error so we know we have to fix it
+      [_ (error "This expression kind isn't implemented yet in ast->sexp" ast)]
+      ))
+  (ast->sexp-helper (transform-all ast)))
 
 
 
