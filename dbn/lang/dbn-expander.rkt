@@ -3,7 +3,7 @@
 (module test racket/base)
 
 (require (for-syntax syntax/parse)
-         "papersim.rkt")
+         "dbn-papersim.rkt")
 
 
 ; this defines the macro expander for the module,

@@ -2,7 +2,7 @@
 
 (require "lang/dbn-parser.rkt"
          "lang/dbn-errors.rkt"
-         "lang/papersim.rkt"
+         "lang/dbn-papersim.rkt"
          (prefix-in ast: "lang/dbn-ast.rkt")
          "lang/dbn-expander.rkt"
          racket/string

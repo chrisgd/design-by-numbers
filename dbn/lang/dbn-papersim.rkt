@@ -25,7 +25,7 @@
          draw-point draw-line get-pixel-color get-pen-color
          get-mouse-x get-mouse-y get-mouse-button get-key get-time dbn-refresh
          dbn-maybe-pause set-antialias dbncolor->greyscale get-bitmap dbn-yield
-         dbn-yield/sleep automatically-close)
+         dbn-yield/sleep automatically-close PAPER-WIDTH PAPER-HEIGHT)
          
 
 ; handle automatic closing
