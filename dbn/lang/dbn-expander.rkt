@@ -59,7 +59,14 @@
   (syntax-rules ()
     [(paper-command color-expr xsize ysize)
      ; make sure to pass in a dbn color!
-     (clear-paper (dbncolor color-expr))]))
+     ;(PAPER-WIDTH xsize)
+     ;(PAPER-HEIGHT ysize)
+     ; reset the paper
+     (begin
+       (PAPER-WIDTH xsize)
+       (PAPER-HEIGHT ysize)
+       (run-paper-sim)
+       (clear-paper (dbncolor color-expr)))]))
 (provide paper-command)
 
 ; Pen-command is a macro which creates the Racket code to create a Pen with a color in DBN.
