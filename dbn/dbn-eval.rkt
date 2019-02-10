@@ -27,7 +27,8 @@
 ;;; evaluates a file by opening it and calling eval-in on the port
 (define (eval-file filename)
   (let ([in (open-input-file filename)])
-    (eval-in in)))
+    #;(eval-in in)
+    (read-language in (λ () (error "Reading error on " filename)))))
 
 ;;; evaluates a string by opening it as an input port
 (define (eval-str str)
