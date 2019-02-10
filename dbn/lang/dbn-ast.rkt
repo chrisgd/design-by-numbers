@@ -225,35 +225,43 @@
 ; the scoping issue that DBN has (blocks are meaningless except for functions)
 (define (lift-var-create env body constructor)
   (let* ([acc (foldl-and-map transform-assignment-expression (cons env null) body)]
-       ; from the foldl-and-map, we'll get a new set of statements (possibly) for the body, and we need to pull
-       ; out any create-var-commands
-            [newbody (reverse (cdr acc))])
-       (let-values ([(creates without-creates) (split-assignments newbody)])
-         ; move the creation of vars up a level before this statement
-         (let* ([new-statement (list (constructor without-creates))]
-                [new-creates (filter (λ (create-stm)
-                                            (match create-stm
-                                              [(create-var-expr sym _)
-                                               (if (apply-env env sym)
-                                                   #f
-                                                   #t)])) creates)]
-                [new-stms (append new-statement new-creates)]
-                [new-env (foldl (λ (var env)
-                                  (match var
-                                    [(create-var-expr sym v)
-                                     (if (apply-env env sym)
-                                         env
-                                         (extend-env env sym v))]
-                                    [_ (error "unexpected kind when lifting create-vars")])) env new-creates)])
-         (values new-env new-stms)))))
+         ; from the foldl-and-map, we'll get a new set of statements (possibly) for the body, and we need to pull
+         ; out any create-var-commands
+         [newbody (reverse (cdr acc))])
+    ; split the newbody into the create vars and the non-create vars (ie, initializations from assignments)
+    (let-values ([(creates without-creates) (split-assignments newbody)])
+      ; move the creation of vars up a level before this statement
+      (let* ([new-statement (list (constructor without-creates))]
+             [new-creates (filter (λ (create-stm)
+                                    (match create-stm
+                                      [(create-var-expr sym _)
+                                       (if (apply-env env sym)
+                                           #f
+                                           #t)])) creates)]
+             [new-stms (append new-statement new-creates)]
+             [new-env (foldl (λ (var env)
+                               (match var
+                                 [(create-var-expr sym v)
+                                  (if (apply-env env sym)
+                                      env
+                                      (extend-env env sym v))]
+                                 [_ (error "unexpected kind when lifting create-vars")])) env new-creates)])
+        (values new-env new-stms)))))
 
-
-; find the exported symbols from a module...is that a thing?
 
 ; function that transforms an assignment-expression into either a new variable creation
 ; kind of statement or an actual assignment to the existing variable
 (define (transform-assignment-expression env statement)
   (match statement
+    ; put it in the environment if it's a create-var expression
+    [(create-var-expr sym expr)
+     (cond
+       ; if the var is already in scope, we want this to be an assignment
+       [(apply-env env sym) (values env (list statement (assignment-expr sym expr)))]
+       [else
+        ; otherwise, we want to put it in the environment
+        (let ([newenv (extend-env env sym #t)])
+          (values newenv statement))])]
     ; see if it's an assignment expression
     [(assignment-expr sym expr)
      (cond
@@ -303,22 +311,11 @@
                                body)])
        (values env (number-fun name params (reverse (cdr acc)))))]
        
-    ;[(command-fun name args body) ...]
+    ; ignore everything else
     [_ (values env statement)]))
 
 
-; transform-program: fun (with type: statement -> env -> statement(s)) -> program -> program
-; transforms the assignment statements in a program by calling
-; fun on each statement in the program to transform it as needed.
-(define (transform-program fun prog)
-  ; get the list of statements
-  (let* ([statements (program-statements prog)]
-         [transformed-statements
-          ; call foldl-and-map to transform the program
-          (foldl-and-map fun (cons (empty-env) null) statements)])               
-    ; notice that we have to reverse the list at the end
-    ; because of the way we're cons'ing up above
-    (program (reverse (cdr transformed-statements)))))
+
                                
 
 ; We have a couple of places where a call to several functions with arguments may be mistaken for a single
@@ -369,6 +366,20 @@
     [_ (values env statement)]))
              
 
+; transform-program: fun (with type: statement -> env -> statement(s)) -> program -> program
+; transforms the statements in a program by calling fun on each statement in the
+; program to transform it as needed.
+(define (transform-program fun prog)
+  ; get the list of statements
+  (let* ([statements (program-statements prog)]
+         [transformed-statements
+          ; call foldl-and-map to transform the program
+          (foldl-and-map fun (cons (empty-env) null) statements)])               
+    ; notice that we have to reverse the list at the end
+    ; because of the way we're cons'ing up above
+    (program (reverse (cdr transformed-statements)))))
+
+
 ; perform all of the transformations on a given program by applying the functions in fun-list
 ; to them. fun-list should be a list of functions that take a statement and environment
 ; to process each statement accordingly. This function then calls transform-program on each
@@ -388,5 +399,6 @@
 ; just a short-cut to do all the transformations
 (define (transform-all prog)
   (transform-ast prog (list
+                       transform-assignment-expression
                        transform-assignment-expression
                        transform-application-expression)))
