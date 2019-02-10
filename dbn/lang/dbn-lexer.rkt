@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+
+(require racket/port)
 
 ; needed for parsing stuff
 (require parser-tools/lex

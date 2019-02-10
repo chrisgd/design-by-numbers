@@ -1,4 +1,7 @@
-#lang racket
+#lang racket/base
+
+; Needed for matching
+(require racket/match)
 
 (provide (all-defined-out))
 
