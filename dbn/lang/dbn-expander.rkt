@@ -17,8 +17,7 @@
    (module configure-runtime racket/base
      (require dbn/configure-runtime)
      (configure #f))
-
-   ;(provide #%top #%app (rename-out (dbn-datum #%datum)) (rename-out (dbn-top-interaction #%top-interaction)))
+   ; and now the parse tree
    PARSE-TREE))
 
 
@@ -26,17 +25,12 @@
 (provide (rename-out [dbn-module-begin #%module-begin])
          ; and provide #%datum, which is needed for literals, #%top, which is needed for
          ; top-level definitions (and in particular for require to work)
-         #%datum #%top)
+         #%datum #%top #%top-interaction #%app)
 
-; This seems to be the way to define #%top-interaction, at least
-; according to https://docs.racket-lang.org/reference/__top-interaction.html
-; and this is how racket expands it by default (we could change this, for
-; example). In our case, this just expands to EXP, and then other macros
-; can act on it, so like term, for example
-(define-syntax-rule (dbn-top-interaction . EXP)
-   EXP)
-(provide (rename-out (dbn-top-interaction #%top-interaction)))
 
+;(define-syntax-rule (dbn-app proc-expr arg ...)
+;  (#%app proc-expr arg ...))
+;(provide (rename-out (dbn-app #%app)))
 
 ; Program-command is a macro to expand an entire DBN program
 (define-syntax program-command
@@ -45,10 +39,11 @@
     [(program-command) (void)]
     [(program-command statement ...)
      (begin
-       ; begin by running the paper sim
-       (run-paper-sim)
-       ; then insert all the statements in our program
+       ; DBN expects that you can draw without a paper declaration
+       (run-paper-sim (PAPER-WIDTH) (PAPER-HEIGHT))
+       ; insert the statements into our program
        statement ...
+       ; end with a refresh
        (dbn-refresh)
        ; tests whether the window should automatically exit or not (by default it pauses)
        (dbn-maybe-pause))]))
@@ -63,9 +58,8 @@
      ;(PAPER-HEIGHT ysize)
      ; reset the paper
      (begin
-       (PAPER-WIDTH xsize)
-       (PAPER-HEIGHT ysize)
-       (run-paper-sim)
+       (dbn-refresh)
+       (run-paper-sim (add1 xsize) (add1 ysize))
        (clear-paper (dbncolor color-expr)))]))
 (provide paper-command)
 
@@ -310,7 +304,7 @@
     [(forever-command (body ...))
      ; I think we need at least one refresh here, so we'll loop, execute the instructions
      ; in the body of the loop, and refresh at the end before starting over
-     (letrec ([loop (λ () body ... (dbn-refresh) (loop))])
+     (letrec ([loop (λ () (suspend-drawing) body ... (resume-drawing) (dbn-refresh) (loop))])
        (loop))]))
 (provide forever-command)
 
