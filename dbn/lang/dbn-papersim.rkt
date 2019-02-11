@@ -363,6 +363,10 @@ a frame and a canvas to draw to.
 
 ; sets things up and launches a window with the backing bitmap
 (define (run-paper-sim width height)
+  ; sanity checking
+  (when (or (< width 0) (< height 0))
+    (raise-arguments-error 'run-paper-sim "Width and height should be greater than 0"
+                           "width" width "height" height))
   ; helper to set up the paper frame
   (define (setup)
     ; now set up the paper frame first
