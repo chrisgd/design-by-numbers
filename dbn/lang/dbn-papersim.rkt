@@ -20,7 +20,7 @@
 (define gui:make-color (gui-dynamic-require 'make-color))
 (define gui:make-pen (gui-dynamic-require 'make-pen))
 
-; I think this is all we need to provide?
+; things the module exports for others to use
 (provide dbncolor dbncolor-grey run-paper-sim set-pen-color! clear-paper
          draw-point draw-line get-pixel-color get-pen-color
          get-mouse-x get-mouse-y get-mouse-button get-key get-time dbn-refresh
@@ -31,8 +31,8 @@
 
 #|
 module dbn-papersim: The purpose of this module is to provide the drawing in a fashion that
-was expected of design by numbers. Here we 
-
+was expected of design by numbers. We implement this via Racket's drawing toolkit by creating
+a frame and a canvas to draw to. 
 |#
 
 
@@ -117,16 +117,48 @@ was expected of design by numbers. Here we
     ; and get the dc for it
     (define scratch-dc (new gui:bitmap-dc% [bitmap scratch-bitmap]))
 
+    (define scratch-width width)
+    (define scratch-height height)
+    (define mouse-x 0)
+    (define mouse-y 0)
+    (define mouse-button 0)
+
     (define/public (get-paper) scratch-bitmap)
     (define/public (get-paper-dc) scratch-dc)
+    (define/public (get-paper-width) scratch-width)
+    (define/public (get-paper-height) scratch-height)
+    (define/public (get-mouse-x) mouse-x)
+    (define/public (get-mouse-y) mouse-y)
+    (define/public (get-mouse-button) mouse-button)
     
     ; set up a callback for on-mouse events
     (define/override (on-event event)
+      ; store the current mouse coordinates and button state
+      (define (handle-mouse-event a-mouse-event)
+        ; set the mouse x and y coordinates regardless of the kind of mouse event
+        (set! mouse-x (send a-mouse-event get-x))
+        ;(if (eq? (paper-canvas%) #f)
+        ;    (set! mouse-y (send a-mouse-event get-y))
+        (set! mouse-y (- (get-paper-height) (send a-mouse-event get-y)))
+        ; if it's a button event, set the mouse button
+        (let ([etype (send a-mouse-event get-event-type)])
+          (cond
+            [(or (eq? etype 'left-down)
+                 (eq? etype 'right-down)
+                 (eq? etype 'middle-down))
+             (set! mouse-button 100)]
+            [(or (eq? etype 'left-up)
+                 (eq? etype 'right-up)
+                 (eq? etype 'middle-up))
+             (set! mouse-button 0)])))
       (handle-mouse-event event))
-    ; setup a callback for on-char events
-    (define/override (on-char event)
-      (handle-key-event event))
 
+  
+      ; setup a callback for on-char events
+      (define/override (on-char event)
+        (handle-key-event event))
+
+    ; setup to handle on-paint events
     (define/override (on-paint)
       (send (send this get-dc) suspend-flush)
       (send (send this get-dc) draw-bitmap scratch-bitmap 0 0)
@@ -135,12 +167,12 @@ was expected of design by numbers. Here we
 
 ; create a panel so we can keep the minimum size of the window to the paper size,
 ; this is where we attach the panel to the frame that was created above
-(define (make-main-panel panel-parent)
+(define (make-main-panel panel-parent width height)
   (new gui:panel%
        [parent panel-parent]
        [style '(border)]
-       [min-width (+ 2 (PAPER-WIDTH))]
-       [min-height (+ 2 (PAPER-HEIGHT))]))
+       [min-width (+ 2 width)]
+       [min-height (+ 2 height)]))
 
 ; defines the canvas we draw on--this sets up the callback to
 ; call draw-bitmap on the dc whenever the canvas needs to be painted,
@@ -150,7 +182,8 @@ was expected of design by numbers. Here we
   (new event-handling-canvas%
        [width width]
        [height height]
-       [parent (make-main-panel parent-frame)]
+       [parent (make-main-panel parent-frame width height)]
+       ;[parent parent-frame]
        [style '(no-autoclear)]
        [min-width width]
        [min-height height]
@@ -161,54 +194,44 @@ was expected of design by numbers. Here we
        ))
 
 (define paper-canvas% (make-parameter #f))
-  
+
+; get the current drawing context
 (define (current-dc%)
   (unless (eq? (paper-canvas%) #f)
     (send (paper-canvas%) get-paper-dc)))
+
+; get the current bitmap we're drawing to
 (define (get-bitmap)
   (unless (eq? (paper-canvas%) #f)
     (send (paper-canvas%) get-paper)))
 
+; suspend flushing for drawing
 (define (suspend-drawing)
   (unless (eq? (paper-canvas%) #f)
     (send (paper-canvas%) suspend-flush)))
+
+; resume flushing for drawing 
 (define (resume-drawing)
   (unless (eq? (paper-canvas%) #f)
     (send (paper-canvas%) resume-flush)))
 
 ; returns the state of the left mouse button, 0 for unpressed, 1 for pressed
 (define (get-mouse-button)
-  mouse-button)
+  (if (eq? (paper-canvas%) #f)
+      0
+      (send (paper-canvas%) get-mouse-button)))
 
 ; returns the x-coordinates of the mouse pointer
 (define (get-mouse-x)
-  mouse-x)
+  (if (eq? (paper-canvas%) #f)
+      0
+      (send (paper-canvas%) get-mouse-x)))
 
 ; returns the y-coordinates of the mouse pointer
 (define (get-mouse-y)
-  mouse-y)
-
-; state for the mouse
-(define mouse-x 0)
-(define mouse-y 0)
-(define mouse-button 0)
-
-; store the current mouse coordinates and button state
-(define (handle-mouse-event a-mouse-event)
-  ; set the mouse x and y coordinates regardless of the kind of mouse event
-  (set! mouse-x (send a-mouse-event get-x))
-  (set! mouse-y (- (PAPER-HEIGHT) (send a-mouse-event get-y)))
-  ; if it's a button event, set the mouse button
-  (let ([etype (send a-mouse-event get-event-type)])
-    (cond
-      [(or (eq? etype 'left-down)
-           (eq? etype 'right-down)
-           (eq? etype 'middle-down))
-       (set! mouse-button 100)]
-      [(or (eq? etype 'left-up)
-           (eq? etype 'right-up)
-           (eq? etype 'middle-up))
-       (set! mouse-button 0)])))
+  (if (eq? (paper-canvas%) #f)
+      0
+      (send (paper-canvas%) get-mouse-y)))
       
 ; we only the letters, this should be expanded to read more, but it's not clear
 ; given the language what this would look like
