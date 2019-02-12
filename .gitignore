@@ -5,3 +5,7 @@ compiled/
 *.icloud
 \#*
 .\#*
+*.out
+*.css
+*.html
+*.js
