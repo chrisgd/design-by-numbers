@@ -9,11 +9,11 @@
 ; every other #lang package created like this
 (module reader racket/base
   (require "lang/dbn-reader.rkt")
-  (provide read-syntax))
+  (provide read read-syntax))
 
 ; now we have to provide read-syntax from main so the reader works properly
 (require 'reader)
-(provide read-syntax)
+(provide read read-syntax)
 
 (module+ main
   ;; Main entry point, executed when run with the `racket` executable or DrRacket.  

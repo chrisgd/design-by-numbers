@@ -12,12 +12,20 @@
 ; giant syntax object from the parser
 (define-syntax-rule (dbn-module-begin PARSE-TREE)
   (#%module-begin
-   ; this causes do-setup! to be run prior to the
-   ; module, and so we can setup the REPL to work with arith
+   ; when a module is run, racket by default looks for a
+   ; configure-runtime submodule, and if it exists, it's
+   ; executed. Thus, we create this submodule, which
+   ; causes do-setup! to be run prior to the
+   ; module, and so we can setup the REPL to work with dbn.
    (module configure-runtime racket/base
      (require dbn/configure-runtime)
      (configure #f))
-   ; and now the parse tree
+
+   (require dbn/lang-info)
+   (provide get-info)
+   
+   ; the parse tree, which is a giant syntax object,
+   ; is dropped in here, which will get expanded with the macros below
    PARSE-TREE))
 
 
