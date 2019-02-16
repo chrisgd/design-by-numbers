@@ -9,9 +9,9 @@
 (require dbn/lang/dbn-indent-utils)
 
 ; how far we want to indent
-(define indent-width 2)
-
-(define indent-level (make-parameter 0))
+(define indent-width (make-parameter 4))
+; I suppose, 
+(provide indent-width)
 
 
 (define (is-open-paren? ch)
@@ -78,12 +78,12 @@
            ; indented to plus our indent space
            [(and last-char-loc curr-char-loc (is-open-paren? (string-ref last-str last-char-loc))
                  (not (is-close-paren? (string-ref curr-str curr-char-loc))))
-            (+ indent-width last-indent)]
+            (+ (indent-width) last-indent)]
            ; now if the last line is something else other than open paren
            ; and we're closing that up on this line, then unindent it
            [(and last-char-loc curr-char-loc (not (is-open-paren? (string-ref last-str last-char-loc)))
                  (is-close-paren? (string-ref curr-str curr-char-loc)))
-            (- indent-width last-indent)]
+            (- last-indent (indent-width))]
            [else last-indent]))]
 
        ; in this case there was no previous line, so we shouldn't indent
@@ -109,10 +109,16 @@ Set lastx <Mouse 1>
 Set lasty <Mouse 2>
 Forever {
 Set newx <Mouse 1>
+{
 Set newy <Mouse 2>
 Line lastx lasty newx newy
+{
 Set [newx newy] 100
-Set lastx newx
+}
+Forever {
+Print 5
+}
+}
 Set lasty newy
 }
 

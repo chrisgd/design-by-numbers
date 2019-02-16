@@ -11,7 +11,8 @@
       ; handle coloring
       [(color-lexer)
        (dynamic-require 'dbn/lang/dbn-colorer 'dbn-colorer)]
-      #;[(drracket:indentation) ...]
+      [(drracket:indentation)
+       (dynamic-require 'dbn/lang/dbn-indenter 'indent-dbn)]
       #;[(drracket:toolbar-buttons) ...]
       [else
        default])))
