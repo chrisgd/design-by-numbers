@@ -10,7 +10,7 @@
        '(#(dbn/configure-runtime configure #f))]
       ; handle coloring
       [(color-lexer)
-       (dynamic-require 'lang/dbn-colorer 'dbn-colorer)]
+       (dynamic-require 'dbn/lang/dbn-colorer 'dbn-colorer)]
       #;[(drracket:indentation) ...]
       #;[(drracket:toolbar-buttons) ...]
       [else

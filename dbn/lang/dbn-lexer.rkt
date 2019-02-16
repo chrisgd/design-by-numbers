@@ -115,14 +115,13 @@
            (raise-lex-error "invalid number" start-pos lexeme))))]
    
    ; identifiers
-   [(:: (:+ lower-case upper-case)
-        (:* (:or numeric lower-case upper-case)))
+   [(:: alphabetic
+        (:* (:or numeric alphabetic #\_)))
     (token-IDENTIFIER (string->symbol lexeme))]
 
-   ; valid filenames, not a simple thing, this is a bit general
-   [(:: (:+ (:or lower-case upper-case numeric #\_ #\- #\/))
-                   "." (:+ (:or lower-case upper-case numeric #\_ #\-)))
-                                                    (token-FILENAME lexeme)]
+   ; valid filenames, not a simple thing, this is a bit general, but must end in .dbn
+   [(:: (:+ (:or alphabetic #\_ #\- #\/)) ".dbn")
+    (token-FILENAME lexeme)]
 
    ; handles comments, note that it consumes the newline after the comment
    [(:: "//" (:* (char-complement (:or #\newline #\linefeed)))
