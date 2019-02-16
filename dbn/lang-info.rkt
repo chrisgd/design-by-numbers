@@ -11,10 +11,15 @@
       ; handle coloring
       [(color-lexer)
        (dynamic-require 'dbn/lang/dbn-colorer 'dbn-colorer)]
+      ; indentation
       [(drracket:indentation)
        (dynamic-require 'dbn/lang/dbn-indenter 'indent-dbn)]
-      #;[(drracket:toolbar-buttons) ...]
+      ; in theory these affect saving and such
+      [(drracket:default-extension) "dbn"]
+      [(drracket:default-filters) '(("DBN files" "*.dbn"))]
+     
       [else
        default])))
 
 (provide get-info)
+
