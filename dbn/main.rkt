@@ -8,8 +8,8 @@
 ; (otherwise it seems to want to find <pkg>/lang/reader.rkt, which conflicts with
 ; every other #lang package created like this
 (module reader racket/base
-  (require "lang/dbn-reader.rkt")
-  (require "lang-info.rkt")
+  (require dbn/lang/dbn-reader)
+  (require dbn/lang-info)
   (provide read read-syntax get-info))
 
 ; now we have to provide read-syntax from main so the reader works properly

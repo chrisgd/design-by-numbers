@@ -1,89 +1,35 @@
 #lang racket/base
 
-; reducing the requirements for the file
+
 (require racket/match
-         racket/list)
-
-(require "dbn-env.rkt")
-;; this module contains all the structs needed to create the abstract
-;; syntax of the DBN language
-(provide (all-defined-out))
-
-;;; these are the expressions for paper, pen and line
-(struct paper-expr (value xsize ysize) #:transparent)
-(struct pen-expr (value) #:transparent)
-(struct line-expr (x1 y1 x2 y2) #:transparent)
-
-;; numeric expressions
-(struct numeric-expr (value) #:transparent)
-
-;; var identifiers
-(struct var-expr (name) #:transparent)
-
-; paper location structs
-(struct set-paper-loc (x y color) #:transparent)
-(struct get-paper-loc (x y) #:transparent)
-(struct antialias-expr (value) #:transparent)
-
-; used to indicate when a variable is created the first time
-(struct create-var-expr (name e1) #:transparent)
-; set, which works on variables
-(struct assignment-expr (e1 e2) #:transparent)
+         racket/list
+         racket/contract
+         "ast-nodes.rkt"
+         "annotations.rkt"
+         "parser.rkt"
+         "env.rkt")
 
 
-; iterations
-(struct repeat-expr (var start end body) #:transparent)
-(struct forever-expr (body) #:transparent)
-
-; predicate expressions
-(struct same-expr (e1 e2 body) #:transparent)
-(struct not-same-expr (e1 e2 body) #:transparent)
-(struct smaller-expr (e1 e2 body) #:transparent)
-(struct not-smaller-expr (e1 e2 body) #:transparent)
-
-; structs for defining functions and procedures,
-; these have a name a list of parameters and a body
-(struct command-fun (name params body) #:transparent)
-(struct number-fun (name params body) #:transparent)
-
-; this is the equivalent of a 'return v' in another language
-(struct value-expr (value) #:transparent)
-
-; just prints to the standard output
-(struct print-expr (value) #:transparent)
-
-; function application, empty for commands
-(struct apply-expr (fun-name params) #:transparent)
-
-; things related to the external world, time, mouse, etc
-(struct mouse-expr (value) #:transparent)
-(struct key-expr (value) #:transparent)
-(struct time-expr (value) #:transparent)
-(struct bitmap-expr () #:transparent)
-
-; compound expressions
-(struct add-expr (e1 e2) #:transparent)
-(struct sub-expr (e1 e2) #:transparent)
-(struct mult-expr (e1 e2) #:transparent)
-(struct div-expr (e1 e2) #:transparent)
-
-; loading
-(struct load-expr (filename) #:transparent)
-
-; represents an entire program, i.e., a list of statements
-(struct program (statements) #:transparent)
 
 ; turn an ast into an s-expression for the reader
+(provide (contract-out (ast->sexp [ast-node? . -> . (listof (or/c symbol? list?))])))
 (define (ast->sexp ast)
+  (define notes (program-notes ast))
   (define (ast->sexp-helper ast)
     ; transform everything first
     (match ast
       ; just map the statements into sexpressions
-      [(program statements) (cons 'program-command (map ast->sexp-helper statements))]
+      [(program statements notes) (cons 'program-command (map ast->sexp-helper statements))]
       ; numbers are numbers (data)
       [(numeric-expr num) num]
       ; symbols are symbols, racket will handle these later
-      [(var-expr sym) sym]
+      [(var-expr sym)
+       ; a simple experiment, if it has a note, we'll assume it was position since that's
+       ; all I'm adding, so we can put this in as context for the macro
+       #;(if (has-note? notes ast 'position)
+             (list 'var-expr sym ast)
+             sym)
+       sym]
       
       ; turn commands into, well commands that we'll handle with
       ; macros by expanding them into actual racket code
@@ -214,7 +160,8 @@
 ; this function takes a list of statements and returns a pair where the car of the pair
 ; is the set of assignments found in the statements, and the cdr of the pair is the set of
 ; statements without the assignments
-(define (split-assignments statements)
+(define/contract (split-assignments statements)
+  [(listof ast-node?) . -> . (values (listof ast-node?) (listof ast-node?))]
   (let ([assignments (filter (λ (statement) (create-var-expr? statement)) statements)]
         [removed-assignments (filter (λ (statement) (not (create-var-expr? statement))) statements)])
     (values assignments removed-assignments)))
@@ -223,22 +170,42 @@
 ; this function looks for var-create-expr inside the body of a block statement, like smaller?,
 ; and then extends the environment if it finds *new* bindings. The purpose is really to deal with
 ; the scoping issue that DBN has (blocks are meaningless except for functions)
+
+
+#|
+; now launch with the first pass on globals
+(let-values ([(newenv newstates) (tae-helper env statement 'global)])
+  ; now find all the create vars and move them to the top first
+  (let-values ([(creates not-creates) (split-assignments newstates)])
+    ; then on function bodies
+    (tae-helper newenv (append creates not-creates) 'function))))
+|#
+
 (define (lift-var-create env body constructor)
-  (let* ([acc (foldl-and-map transform-assignment-expression (cons env null) body)]
+  (let* ([acc (foldl-and-map (λ (env statement)
+                               (transform-assignment-expression env statement 'global))
+                             (cons env null)
+                             body)]
          ; from the foldl-and-map, we'll get a new set of statements (possibly) for the body, and we need to pull
          ; out any create-var-commands
          [newbody (reverse (cdr acc))])
     ; split the newbody into the create vars and the non-create vars (ie, initializations from assignments)
     (let-values ([(creates without-creates) (split-assignments newbody)])
       ; move the creation of vars up a level before this statement
+      ; this first part recreates a struct by making its body the list of statements without var creation
       (let* ([new-statement (list (constructor without-creates))]
+             ; then we go through the list of created vars, if it exists already, we don't
+             ; need this create-var-epxr, so we throw it out and keep only the unique ones
              [new-creates (filter (λ (create-stm)
                                     (match create-stm
                                       [(create-var-expr sym _)
                                        (if (apply-env env sym)
                                            #f
                                            #t)])) creates)]
-             [new-stms (append new-statement new-creates)]
+             ; now we append the new var initialization and the statements
+             [new-stms (append new-creates new-statement)]
+             ; and finally we walk through and extend the current environment with these
+             ; create vars so they'll exist as we look up other things from this point on
              [new-env (foldl (λ (var env)
                                (match var
                                  [(create-var-expr sym v)
@@ -246,73 +213,106 @@
                                       env
                                       (extend-env env sym v))]
                                  [_ (error "unexpected kind when lifting create-vars")])) env new-creates)])
+        ; and then we return it all
         (values new-env new-stms)))))
 
 
+
 ; function that transforms an assignment-expression into either a new variable creation
-; kind of statement or an actual assignment to the existing variable
-(define (transform-assignment-expression env statement)
-  (match statement
-    ; put it in the environment if it's a create-var expression
-    [(create-var-expr sym expr)
-     (cond
-       ; if the var is already in scope, we want this to be an assignment
-       [(apply-env env sym) (values env (list statement (assignment-expr sym expr)))]
-       [else
-        ; otherwise, we want to put it in the environment
-        (let ([newenv (extend-env env sym #t)])
-          (values newenv statement))])]
-    ; see if it's an assignment expression
-    [(assignment-expr sym expr)
-     (cond
-       ; if apply-env does not return false, then we just return the current environment and statement,
-       ; in other words, it's okay to be a set
-       [(apply-env env sym) (values env statement)]
-       [else
-        ; first time we've seen it, so extend the environment
-        (let ([newenv (extend-env env sym #t)])
-          ; and now generate a create-var-expr followed by the actual assignment (here we init to 0)
-          (values newenv (list statement (create-var-expr sym (numeric-expr 0)))))])]
-    ; many of the statements can have blocks, so we need to recursively deal with these
-    [(repeat-expr var start end body)
-     ; recurse into the structure, but extend the environment with var so it's visible (and we don't redefine it)
-     (let ([acc (foldl-and-map transform-assignment-expression (cons (extend-env env var #t) null) body)])
-       (values env (repeat-expr var start end (reverse (cdr acc)))))]
-    ; recurse into forever
-    [(forever-expr body)
-     (let ([acc (foldl-and-map transform-assignment-expression (cons env null) body)])
-       (values env (forever-expr (reverse (cdr acc)))))]
-    ; now the comparisons, same
-    [(same-expr e1 e2 body)
-     (lift-var-create env body (λ (newbody) (same-expr e1 e2 newbody)))]
-    ; then not-same
-    [(not-same-expr e1 e2 body)
-     (lift-var-create env body (λ (newbody) (not-same-expr e1 e2 newbody)))]
-    ; handle smaller? expressions
-    [(smaller-expr e1 e2 body)
-     (lift-var-create env body (λ (newbody) (smaller-expr e1 e2 newbody)))]
-    ; and not-smaller expressions
-    [(not-smaller-expr e1 e2 body)
-     (lift-var-create env body (λ (newbody) (not-smaller-expr e1 e2 newbody)))]
+; kind of statement or an actual assignment to the existing variable. This ends up being
+; fairly complicated because a global variable is visible everywhere, so you need a pass
+; on everything not including number-defs and command-defs so that when you process them,
+; they're then visible to those functions. Since we're using our own environment, and not
+; racket's, we have to deal with it. Fortunately, there aren't any nested functions...
+(define (transform-assignment-expression env statement pass)
+  ; handle passes
+  (cond
+    [(eq? pass 'global)
+     (match statement
+       ; put it in the environment if it's a create-var expression
+       [(create-var-expr sym expr)
+        (cond
+          ; if the var is already in scope, we want this to be an assignment
+          [(apply-env env sym) (values env (list statement (assignment-expr sym expr)))]
+          [else
+           ; otherwise, we want to put it in the environment
+           (let ([newenv (extend-env env sym #t)])
+             (values newenv statement))])]
+       ; see if it's an assignment expression
+       [(assignment-expr sym expr)
+        (cond
+          ; if apply-env does not return false, then we just return the current environment and statement,
+          ; in other words, it's okay to be a set
+          [(apply-env env sym) (values env statement)]
+          [else
+           ; first time we've seen it, so extend the environment
+           (let ([newenv (extend-env env sym #t)])
+             ; and now generate a create-var-expr followed by the actual assignment (here we init to 0)
+             (values newenv (list (create-var-expr sym expr))))])]
+       ; many of the statements can have blocks, so we need to recursively deal with these
+       [(repeat-expr var start end body)
+        ; recurse into the structure, but extend the environment with var so it's visible (and we don't redefine it)
+        (let ([acc (foldl-and-map (λ (env statement)
+                                    (transform-assignment-expression env statement pass))
+                                  (cons (extend-env env var #t) null) body)])
+          (values env (repeat-expr var start end (reverse (cdr acc)))))]
+       ; recurse into forever
+       [(forever-expr body)
+        (let ([acc (foldl-and-map (λ (env statement)
+                                    (transform-assignment-expression env statement pass))
+                                  (cons env null) body)])
+          (values env (forever-expr (reverse (cdr acc)))))]
+       ; now the comparisons, same
+       [(same-expr e1 e2 body)
+        (lift-var-create env body (λ (newbody) (same-expr e1 e2 newbody)))]
+       ; then not-same
+       [(not-same-expr e1 e2 body)
+        (lift-var-create env body (λ (newbody) (not-same-expr e1 e2 newbody)))]
+       ; handle smaller? expressions
+       [(smaller-expr e1 e2 body)
+        (lift-var-create env body (λ (newbody) (smaller-expr e1 e2 newbody)))]
+       ; and not-smaller expressions
+       [(not-smaller-expr e1 e2 body)
+        (lift-var-create env body (λ (newbody) (not-smaller-expr e1 e2 newbody)))]
+    
+       ; handle var expressions
+       [(var-expr sym)
+        (let ([val (apply-env env sym)])
+          (if val
+              (values env statement)
+              (raise-syntax-error #f "Undeclared variable (you must use SET on a variable before trying to use its name)" statement)))] 
+       ; ignore everything else
+       [_ (values env statement)])]
 
-    ; handle commands, this means extending their environments with parameters when dealing with the bodies
-    [(command-fun name params body)
-     (let ([acc (foldl-and-map transform-assignment-expression
-                               (cons (extend-env-with-pairs (map (λ (param) (cons param #t)) params) env) null)
-                               body)])
-       ; assignment doesn't really have anything to do with function calls, so we don't need to extend the
-       ; returned environment (this would be handled in a different function)
-       (values env (command-fun name params (reverse (cdr acc)))))]
+    ; the function pass
+    [(eq? pass 'function)
+     (match statement
+       ; the only thing we are worried about on the 2nd pass for the environment
+       [(create-var-expr sym expr)
+        ; put it in the environment
+        (let ([newenv (extend-env env sym #t)])
+          (values newenv statement))]
+       ; handle commands, this means extending their environments with parameters when dealing with the bodies
+       [(command-fun name params body)
+        (let ([acc (foldl-and-map (λ (env statements) (transform-assignment-expression env statements 'global))
+                                  (cons (extend-env-with-pairs (map (λ (param) (cons param #t)) params) env) null)
+                                  body)])
+          ; assignment doesn't really have anything to do with function calls, so we don't need to extend the
+          ; returned environment (this would be handled in a different function)
+          (values env (command-fun name params (reverse (cdr acc)))))]
+         
+       ; handle numbers in a similar fashion
+       [(number-fun name params body)
+        (let ([acc (foldl-and-map (λ (env statements) (transform-assignment-expression env statements 'global))
+                                  (cons (extend-env-with-pairs (map (λ (param) (cons param #t)) params) env) null)
+                                  body)])
+          (values env (number-fun name params (reverse (cdr acc)))))]
 
-    ; handle numbers in a similar fashion
-    [(number-fun name params body)
-     (let ([acc (foldl-and-map transform-assignment-expression
-                               (cons (extend-env-with-pairs (map (λ (param) (cons param #t)) params) env) null)
-                               body)])
-       (values env (number-fun name params (reverse (cdr acc)))))]
-       
-    ; ignore everything else
-    [_ (values env statement)]))
+       [else (values env statement)])]
+      
+    ; in case we call it badly
+    [else (raise-argument-error 'tae-helper "or/c 'global 'function" pass)]))
+  
 
 
 
@@ -320,7 +320,7 @@
 
 ; We have a couple of places where a call to several functions with arguments may be mistaken for a single
 ; function call. This repairs those issues. At this point, we have an AST so we'll know which identifiers
-; are either function calls or just variable names and we can split these into multiple lines. 
+; are either function calls or just variable names and we can split these into multiple lines.
 (define (transform-application-expression env statement)
   (match statement
     ; apply begins with a function name and is followed by args, which must be resolved
@@ -377,7 +377,7 @@
           (foldl-and-map fun (cons (empty-env) null) statements)])               
     ; notice that we have to reverse the list at the end
     ; because of the way we're cons'ing up above
-    (program (reverse (cdr transformed-statements)))))
+    (program (reverse (cdr transformed-statements)) (program-notes prog))))
 
 
 ; perform all of the transformations on a given program by applying the functions in fun-list
@@ -398,7 +398,15 @@
 
 ; just a short-cut to do all the transformations
 (define (transform-all prog)
-  (transform-ast prog (list
-                       transform-assignment-expression
-                       transform-assignment-expression
-                       transform-application-expression)))
+  (let ([new-prog 
+         (transform-ast
+          prog
+          (list
+           ; we do two passes with transform-assignment-expression, first on the globals
+           ; then on the functions
+           (λ (env statement) (transform-assignment-expression env statement 'global))
+           ;(λ (env statement) (transform-assignment-expression env statement 'function))
+           transform-application-expression))])
+    (let-values ([(creates no-creates) (split-assignments (program-statements new-prog))])
+      (transform-ast (program (append creates no-creates) (program-notes new-prog))
+                     (list (λ (env statement) (transform-assignment-expression env statement 'function)))))))

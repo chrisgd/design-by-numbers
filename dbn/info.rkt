@@ -12,6 +12,6 @@
 ; first release of design by numbers
 (define pkg-desc "Implementation of DBN (Design by Numbers) language")
 ; version number
-(define version "1.0.1")
+(define version "1.0.2")
 ; the folks who created this (us!)
 (define pkg-authors '(jedgingt chrisg))

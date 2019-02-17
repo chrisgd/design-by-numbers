@@ -3,7 +3,7 @@
 (module test racket/base)
 
 (require (for-syntax syntax/parse)
-         "dbn-papersim.rkt")
+         dbn/dbnc/papersim)
 
 
 ; this defines the macro expander for the module,
@@ -27,6 +27,7 @@
    ; the parse tree, which is a giant syntax object,
    ; is dropped in here, which will get expanded with the macros below
    PARSE-TREE))
+
 
 
 ; rename dbn-module-begin on the way out to #%module-begin, which racket expects
@@ -140,7 +141,7 @@
 (define-syntax div-expr
   (syntax-rules ()
     [(div-expr x-expr y-expr)
-                   (/ x-expr y-expr)]))
+                   (quotient x-expr y-expr)]))
 (provide div-expr)
 
 ; print-statement is the Print statement in DBN that calls display on its expression

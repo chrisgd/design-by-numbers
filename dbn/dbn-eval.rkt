@@ -1,9 +1,9 @@
 #lang racket/base
 
-(require "lang/dbn-parser.rkt"
-         "lang/dbn-errors.rkt"
-         "lang/dbn-papersim.rkt"
-         (prefix-in ast: "lang/dbn-ast.rkt")
+(require "dbnc/parser.rkt"
+         "dbnc/errors.rkt"
+         "dbnc/papersim.rkt"
+         (prefix-in ast: "dbnc/ast.rkt")
          "lang/dbn-expander.rkt"
          racket/string
          racket/cmdline)
@@ -13,7 +13,7 @@
 ;; this evaluates dbn from an input port, or should anyways
 (define (eval-in port)
   ; get the ast (this is from dbn-parser.rkt)
-  (let ([ast (ast:transform-all (parse port))])
+  (let ([ast (parse port)])
     (parser-error #f)
     (if (parser-error)
         (error "Error parsing dbn file")

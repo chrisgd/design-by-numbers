@@ -1,10 +1,10 @@
 #lang racket/base
 
 ; the parser
-(require dbn/lang/dbn-parser
+(require dbn/dbnc/parser
          syntax/parse
          syntax/strip-context
-         dbn/lang/dbn-ast)
+         dbn/dbnc/ast)
 
 ; provide out our configure
 (provide configure)

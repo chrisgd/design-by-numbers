@@ -10,10 +10,10 @@
        '(#(dbn/configure-runtime configure #f))]
       ; handle coloring
       [(color-lexer)
-       (dynamic-require 'dbn/lang/dbn-colorer 'dbn-colorer)]
+       (dynamic-require 'dbn/dbnc/colorer 'dbn-colorer)]
       ; indentation
       [(drracket:indentation)
-       (dynamic-require 'dbn/lang/dbn-indenter 'indent-dbn)]
+       (dynamic-require 'dbn/dbnc/indenter 'indent-dbn)]
       ; in theory these affect saving and such
       [(drracket:default-extension) "dbn"]
       [(drracket:default-filters) '(("DBN files" "*.dbn"))]

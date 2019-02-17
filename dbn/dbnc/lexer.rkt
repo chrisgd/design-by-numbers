@@ -8,7 +8,7 @@
          ; this last gives us prettier names for common regular expression stuff,
          ; and also renames it so they're all prefixed with ':' in their names
          (prefix-in : parser-tools/lex-sre)
-         "dbn-errors.rkt")
+         dbn/dbnc/errors)
 
 ; just output everything
 (provide (all-defined-out))

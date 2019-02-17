@@ -6,7 +6,7 @@
          parser-tools/lex
          syntax-color/lexer-contract
          (prefix-in : parser-tools/lex-sre)
-         dbn/lang/dbn-lexer)
+         dbn/dbnc/lexer)
 
 ; this is critical for writing your lexer which makes sure it's well-behaved, don't skip this!
 ; it requires the syntax-color/lexer-contract from above!

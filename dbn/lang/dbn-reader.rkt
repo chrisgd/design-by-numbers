@@ -1,8 +1,8 @@
 #lang racket/base
 (require syntax/strip-context)
 ; require the parser and ast
-(require dbn/lang/dbn-parser
-         dbn/lang/dbn-ast)
+(require dbn/dbnc/parser
+         dbn/dbnc/ast)
 
 ; now provide read and read-syntax for the rest of the world
 (provide (rename-out [dbn-read read]

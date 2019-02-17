@@ -6,7 +6,7 @@
          racket/class)
 
 ; help deal with indentations
-(require dbn/lang/dbn-indent-utils)
+(require dbn/dbnc/indent-utils)
 
 ; how far we want to indent
 (define indent-width (make-parameter 4))
