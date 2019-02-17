@@ -48,8 +48,8 @@
 
 
 
-;(provide (contract-out (indent-dbn
-;                       [(is-a?/c text%) exact-nonnegative-integer? . -> . exact-nonnegative-integer?])))
+(provide (contract-out (indent-dbn
+                       [(is-a?/c text%) exact-nonnegative-integer? . -> . exact-nonnegative-integer?])))
 (define (indent-dbn text [pos 0])
   ; when we're indenting, we really only know that we're indenting the
   ; current line, so we can try to look at context and hope that we've

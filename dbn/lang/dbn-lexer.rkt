@@ -112,17 +112,19 @@
      (let ([num (string->number lexeme 10 'number-or-false)])
        (if num
            num
-           (raise-lex-error "invalid number" start-pos lexeme))))]
+           (raise-lex-error 'invalid-number start-pos lexeme))))]
    
+   
+   ; valid filenames, not a simple thing, this is a bit general, but must end in .dbn
+   ; valid filenames, not a simple thing, this is a bit general
+   [(:: (:+ (:or lower-case upper-case numeric #\_ #\- #\/)) ".DBN")
+    (token-FILENAME lexeme)]
+
    ; identifiers
    [(:: alphabetic
         (:* (:or numeric alphabetic #\_)))
     (token-IDENTIFIER (string->symbol lexeme))]
-
-   ; valid filenames, not a simple thing, this is a bit general, but must end in .dbn
-   [(:: (:+ (:or alphabetic #\_ #\- #\/)) ".dbn")
-    (token-FILENAME lexeme)]
-
+   
    ; handles comments, note that it consumes the newline after the comment
    [(:: "//" (:* (char-complement (:or #\newline #\linefeed)))
         #;(:+ (:or #\newline #\linefeed))) (return-without-pos (dbnlexer input-port))]
@@ -137,7 +139,7 @@
    [(eof) (token-EOF)]
 
    ; anything else is a syntax error, so report it as such
-   [any-char (raise-lex-error "unexpected char" start-pos lexeme)]))
+   [any-char (raise-lex-error 'unrecognized-char start-pos lexeme)]))
 
 ; position -> string -> error
 ; raises a lexing error
@@ -147,10 +149,11 @@
     (raise-syntax-error 'dbnlexer error-msg)))
 
 (define (error-kind->msg kind-of-error)
-  (cond [(eq? kind-of-error "syntax error") "syntax error"]
-        [(eq? kind-of-error "invalid number") "invalid number"]
-        [(eq? kind-of-error "unrecognized char") "unrecognized character"]
-        [else "UNKNOWN ERROR SPECIFIED"]))        
+  (cond
+    [(eq? kind-of-error 'syntax-error) "syntax error"]
+    [(eq? kind-of-error 'invalid-number) "invalid number"]
+    [(eq? kind-of-error 'unrecognized-char) "unrecognized character"]
+    [else "UNKNOWN ERROR SPECIFIED"]))        
 
 (define (format-error-msg msg pos lexeme)
   (let* ([linenums? (not (eq? (position-line pos) #f))]
@@ -232,7 +235,7 @@
 
 (module+ test
   (require rackunit)
-  (require rackunit/text-ui)
+  ;(require rackunit/text-ui)
 
   ; testing the various things we lex
   (check-equal? (lexstr "Paper") (list (token-PAPER)) "Lexing Paper issue")
