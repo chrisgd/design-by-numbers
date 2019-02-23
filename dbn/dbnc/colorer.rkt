@@ -14,9 +14,10 @@
 ; and then see the start colorer function in: https://docs.racket-lang.org/framework/Color.html,
 ; which goes into great deal explaining this. Once you have your colorer working, you can probably
 ; dump this since I suspect it's expensive with the testing it does, haha.
-(provide
- (contract-out
-  [dbn-colorer lexer/c]))
+;(provide
+; (contract-out
+;  [dbn-colorer lexer/c]))
+(provide dbn-colorer)
 
 
 ; simplifying some of the code writing, from syntax-color/racket-lexer

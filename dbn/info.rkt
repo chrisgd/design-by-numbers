@@ -2,7 +2,7 @@
 ; name of this package, dbn
 (define collection "dbn")
 ; dependencies
-(define deps '("base" "rackunit-lib" "parser-tools-lib" "gui-lib" "wxme-lib"))
+(define deps '("base" "rackunit-lib" "parser-tools-lib" "gui-lib" "syntax-color-lib" "wxme-lib"))
 ; build dependencies, we need scribble, docs and rackunit for testing
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 ; location of documentation
