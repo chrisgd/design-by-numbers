@@ -23,7 +23,11 @@ language has procedures (which do not return a value) and functions.
 
 @table-of-contents[]
 
-@section[#:tag"language-ref"]{Language Reference}
+
+@include-section["dbn-guide.scrbl"]
+
+
+@section[#:tag"language-ref"]
 
 @subsection[#:tag"paper"]{Paper}
 The Paper statement creates a drawing canvas of 100 by 100 pixels. Each pixel of the
@@ -31,7 +35,10 @@ canvas is set to the specified @secref{color}.
 
 Example:
 
-@codeblock{Paper 0}
+@codeblock|{
+  #lang dbn
+  Paper 0
+}|
 
 @subsection[#:tag"pen"]{Pen}
 The Pen statement specifies the @secref{color} of any following drawing statements
@@ -224,136 +231,4 @@ Parser errors generally indicate that you didn't use the right sentence
 structure when telling DBN what to do. Check this document for examples
 of using statements and such correctly.
 
-@section[#:tag"language-guide"]{Language Guide}
-To begin using Design by Numbers (DBN), you must
-first install the design-by-numbers package. You can do
-this by going to the Racket menu and selecting file, then
-Package Manager. Select the 'Available from Catalog' tab,
-click Update Package List to get the latest list of packages,
-and then search for design-by-numbers. When you find this,
-click 'Install' to install it. 
 
-To create a program in DBN, you must put
-#lang dbn at the top of the Racket Definitions
-area. Note, this is
-only required because you need to let Racket know which kind of
-language will follow. By doing this, you tell Racket to use the
-DBN language. If you find examples on the web or in John Maeda's
-book, you will @italic{not} see this, so you can simply add
-it to the top of those examples.
-
-When you Save the definitions in Racket, your code will be saved to
-a file which will end in .rkt or .dbn (you can chose either). Most
-examples you find on the web might end in .dbn, but it doesn't affect
-the contents of the file. By clicking on the Run button in Racket,
-you will run (or execute) the code you've typed in the Defintions.
-
-Try this first program in DBN:
-
-@codeblock{
-           Paper 0}
-
-You should see a small window pop up on the screen. This is the
-@italic{paper} that your statements in your program will draw to.
-Racket allows you to interact with the current program, so at the
-bottom of Racket, you should find the @italic{Interactions} area
-where you can type statements. Try typing the following:
-
-@codeblock{Paper 100}
-
-The window should turn black. This is because all color in DBN
-is on the grey scale and goes from totally white to totally black.
-Colors are represented by numbers that indicate what percentage of
-ink is transfered to the paper. 0 means no ink while 100 means 100%
-of the ink is drawn to the paper. A number of 50 will give you a
-value half-way between no ink and all ink.
-
-DBN has other commands that you can use to do more interesting things
-than just coloring a page with a single color. Keep reading to
-learn more!
-
-@subsection[#:tag"syntax"]{Syntax}
-In Design by Numbers (DBN), some words belong to the language and
-we call these words the syntax. In addition to the words, the rules
-for how they can be written are called the grammar (just like your
-spoken language has a grammar, a programming language has a grammar,
-albeit a pretty simple one). 
-
-In DBN, the syntax and grammar can be broadly divided into @secref{statements},
-@secref{definitions}, and @secref{expressions}. Both statements and definitions must be
-separated by at least one new line character (i.e., pressing enter or
-return on your keyboard). A statement usually tells DBN what you would
-like it to do, while a definition creates new kinds of statements and
-expressions. Expressions, on the other hand, are primarily used for
-different kinds of calculations.
-
-In DBN, case @italic{does not matter}, thus, you may use upper, lower
-or mixed case when writing programs. 
-
-@subsection[#:tag"statements"]{Statements}
-DBN has the following built-in statements: @secref{paper}, @secref{pen}
-@secref{set}, @secref{same}, @secref{notsame}, @secref{smaller},
-@secref{notsmaller}, @secref{repeat}, @secref{forever}, @secref{load},
-and @secref{antialias}. You can see the details of any of those
-statements, but like with Paper commands, they must all be written
-on their own line in a DBN program. For example (and remember
-that you must have #lang dbn at the top of your file):
-
-@codeblock{
- Paper 0
- Pen 100
- Line 0 0 100 100
-}
-
-This will draw a line from the bottom left of the paper to the top
-right. Paper in DBN has @italic{coordinates}, which are numbers
-that indicate where on the paper a color can go. The bottom left
-corner is the coordinate (0, 0) and the top right corner is (100, 100).
-When we execute the @secref{line} command above, we are telling
-DBN to use the current @secref{pen} @secref{color} and draw a line
-from coordinate (0, 0) to (100, 100). The first part of the coordinate,
-which you may remember as 'x' from school, starts at 0 on the left
-and goes to 100 on the right. The second part of the coordinate goes
-from 0 on the bottom and up to 100 on the right.
-
-Using the Interactions area, can you draw a line from the top left
-to the bottom right? What would the command be?
-
-@codeblock{Line 0 100 100 0}
-
-DBN has many other kinds of commands which we suggest you explore!
-
-@subsection[#:tag"definitions"]{Definitions}
-DBN allows you to create @italic{procedures} and @italic{functions}.
-A procedure defines a new kind of statement and you tell it exactly
-how many arguments it needs to execute that statement. A function
-defines a kind of calculation that will return a value when called
-as part of @secref{expressions}.
-
-To create a procedure, use @secref{command}. For example, to create
-a command that draws a horizontal line, you could write it as
-follows:
-
-@codeblock{
-           Command HorizontalLine Y
-           {
-             Line 0 y 100 Y
-           }
-                                    }
-
-@subsection[#:tag"expressions"]{Expressions}
-Design by numbers understands math expressions and allows the use of parenthesis
-for clarity and to enforce a particular order of operation. For example,
-
-@codeblock{
-  Set X (17 * Y + 3)
-}
-
-Anywhere math is used, a Number may also be substituted.
-
-@subsection[#:tag"color"]{Color}
-All drawings in Design By Numbers use grey-scale colors. Color values are
-specified using numeric values between 0 and 100 inclusive.
-
-Color values are required for @secref{paper} and some types of
-@secref{set} statements.
